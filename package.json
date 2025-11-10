@@ -1,0 +1,13 @@
+{
+  "name": "recklion-next-hardhat2",
+  "private": true,
+  "workspaces": [
+    "apps/hardhat",
+    "apps/frontend"
+  ],
+  "scripts": {
+    "build": "npm -w apps/hardhat run build && npm -w apps/frontend run build",
+    "dev": "npm -w apps/hardhat run node & npm -w apps/frontend run dev",
+    "test": "npm -w apps/hardhat test"
+  }
+}
