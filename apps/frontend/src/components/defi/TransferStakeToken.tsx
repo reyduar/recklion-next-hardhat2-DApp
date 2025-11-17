@@ -223,7 +223,7 @@ export const TransferStakeToken = () => {
               size="lg"
               isDisabled={isProcessing}
             >
-              {isProcessing ? "Procesando..." : "STAKE!"}
+              {isProcessing ? "Procesando..." : "Stake"}
             </Button>
           </form>
 
@@ -237,7 +237,7 @@ export const TransferStakeToken = () => {
             onPress={handleUnstake}
             isDisabled={isProcessing}
           >
-            RETIRAR STAKE
+            Retirar Stake
           </Button>
 
           {isProcessing && (
