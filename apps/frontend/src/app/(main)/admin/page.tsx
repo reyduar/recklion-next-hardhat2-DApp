@@ -522,7 +522,7 @@ NEXT_PUBLIC_CHEF_ADDRESS="0xGHI789..."`}</pre>
       <div className="mt-12 text-center pb-8">
         <p className="text-gray-500 text-sm">¡Feliz staking! 🚀🎁</p>
         <p className="text-gray-600 text-xs mt-2">
-          Proyecto creado con ❤️ por Ariel Duarte en 2025
+          Proyecto creado con ❤️ por Ariel Duarte
         </p>
       </div>
     </div>
