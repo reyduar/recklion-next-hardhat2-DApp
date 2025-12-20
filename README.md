@@ -252,41 +252,155 @@ Esto genera:
 - Los **ABIs** (Application Binary Interface) en `artifacts/`
 - Los **bytecodes** necesarios para el despliegue
 
-### Paso 4: Desplegar en Polygon Amoy
+### Paso 4: Sistema Modular de Despliegue
+
+El proyecto cuenta con un **sistema modular** que permite desplegar contratos de forma independiente, optimizando costos de gas y organización.
+
+#### 📁 Archivos del Sistema:
+
+**Scripts de Deploy:**
+
+- `scripts/deploy-all.ts` - Despliega TODOS los contratos
+- `scripts/deploy-defi.ts` - Despliega solo DeFi (Damc, Rey, Chef)
+- `scripts/deploy-lottery.ts` - Despliega solo Lottery
+- `scripts/deployment-utils.ts` - Utilidades para manejar deployments
+
+**Scripts de ABIs:**
+
+- `scripts/copy-abis-module.cjs` - Script principal modular
+- `scripts/copy-abis-defi.cjs` - Copia ABIs de DeFi
+- `scripts/copy-abis-lottery.cjs` - Copia ABIs de Lottery
+- `scripts/copy-abis.cjs` - Copia todos los ABIs
+
+**Registro de Deployments:**
+
+- `deployments.json` - Guarda todas las direcciones desplegadas por red
+
+#### 🚀 Comandos de Despliegue Disponibles:
+
+##### Desplegar TODO (Primera vez en una red nueva):
 
 ```bash
-# Desplegar en Polygon Amoy y copiar los ABIs al frontend
-npm run deploy:amoy
+npm run deploy:amoy        # Despliega todos los contratos + copia todos los ABIs
+npm run deploy:sepolia     # Lo mismo en Sepolia
 ```
 
-**¿Qué hace este comando?**
+##### Desplegar SOLO el módulo DeFi:
 
-1. Compila los contratos
-2. Ejecuta el script `scripts/deploy.ts`
-3. Despliega los 3 contratos en orden:
-   - Primero **DamcStakedToken**
-   - Segundo **ReyRewardToken**
-   - Tercero **MasterChefToken** (recibe las direcciones de los otros dos)
-4. Copia los ABIs a `apps/frontend/src/abis/` para que el frontend los use
+```bash
+npm run deploy:defi:amoy     # Solo Damc, Rey, Chef + copia sus ABIs
+npm run deploy:defi:sepolia  # Lo mismo en Sepolia
+```
+
+##### Desplegar SOLO el módulo Lottery:
+
+```bash
+npm run deploy:lottery:amoy     # Solo Lottery + copia sus ABIs
+npm run deploy:lottery:sepolia  # Lo mismo en Sepolia
+```
+
+#### ✨ Características del Sistema Modular:
+
+**🔍 Detección Inteligente:**
+
+- No redespliega contratos que ya existen
+- Lee del archivo `deployments.json` para verificar
+- Ahorra gas al no duplicar deployments
+
+**💾 Registro Automático:**
+
+- Guarda todas las direcciones en `deployments.json`
+- Incluye deployer, timestamp y blockNumber
+- Organizado por red (polygonAmoy, sepoliaInfura, etc.)
+
+**📋 ABIs Modulares:**
+
+- Copia solo los ABIs del módulo desplegado
+- No sobrescribe ABIs innecesariamente
+- Mantiene sincronizado frontend con contratos
+
+#### 📊 Ejemplo de Uso: Agregar Lottery a Red Existente
+
+Si ya tienes DeFi desplegado y quieres agregar Lottery:
+
+```bash
+# Solo despliega Lottery, no toca DeFi
+npm run deploy:lottery:amoy
+```
 
 **Salida esperada:**
 
 ```
-Deploying with: 0x123...abc
-✅ Damc: 0xABC123...
-✅ Rey : 0xDEF456...
-✅ Chef: 0xGHI789...
+🎰 Deploying Lottery Contract
+────────────────────────────────────────────────────────
+Network: polygonAmoy
+Deployer: 0x329Ea8998809812f37547F0361aBaE2D15683B88
+────────────────────────────────────────────────────────
+
+⏳ Deploying Lottery...
+💾 Saved Lottery deployment to polygonAmoy
+✅ Lottery deployed: 0x9b1202d5b3Fac25574Fe2fe565c5476B60009a8b
+✅ mainERC721 NFT deployed: 0x5a9a18E68746EA81E7eD96368745E3A3eC131D20
+
+📦 Deployments on polygonAmoy:
+────────────────────────────────────────────────────────
+✅ Lottery              0x9b1202d5b3Fac25574Fe2fe565c5476B60009a8b
+✅ LotteryNFT           0x5a9a18E68746EA81E7eD96368745E3A3eC131D20
+────────────────────────────────────────────────────────
+
+📋 Copiando ABIs del módulo: lottery
+────────────────────────────────────────────────────────
+✅ Lottery.json
+✅ mainERC721.json
+────────────────────────────────────────────────────────
+📊 Resultado: 2 copiados, 0 errores
 ```
 
-### Paso 5: Guardar las Direcciones
+#### 🎯 Comandos de Copia de ABIs (Manual)
 
-Copiá las direcciones de los contratos y crealas en `apps/frontend/.env.local`:
+Si necesitas copiar ABIs sin hacer deploy:
 
 ```bash
+npm run copy-abis:all      # Copia todos los ABIs
+npm run copy-abis:defi     # Copia solo ABIs de DeFi
+npm run copy-abis:lottery  # Copia solo ABIs de Lottery
+```
+
+### Paso 5: Verificar y Usar las Direcciones Desplegadas
+
+Las direcciones de los contratos se guardan **automáticamente** en `apps/hardhat/deployments.json`:
+
+```json
+{
+  "polygonAmoy": {
+    "DamcStakedToken": {
+      "address": "0xABC123...",
+      "deployer": "0x329Ea8...",
+      "timestamp": 1703012345678,
+      "blockNumber": 12345678
+    },
+    "ReyRewardToken": { ... },
+    "MasterChefToken": { ... },
+    "Lottery": { ... },
+    "LotteryNFT": { ... }
+  }
+}
+```
+
+**Para usar en el frontend,** copiá las direcciones a `apps/frontend/.env.local`:
+
+```bash
+# DeFi Contracts
 NEXT_PUBLIC_DAMC_ADDRESS="0xABC123..."
 NEXT_PUBLIC_REY_ADDRESS="0xDEF456..."
 NEXT_PUBLIC_CHEF_ADDRESS="0xGHI789..."
+
+# Lottery Contracts
+NEXT_PUBLIC_LOTTERY_ADDRESS="0x9b1202d5b3Fac25574Fe2fe565c5476B60009a8b"
+NEXT_PUBLIC_LOTTERY_NFT_ADDRESS="0x5a9a18E68746EA81E7eD96368745E3A3eC131D20"
 ```
+
+**💡 Tip:** El archivo `deployments.json` te permite ver el historial completo de todos los contratos desplegados en cada red.
 
 ---
 
@@ -572,13 +686,40 @@ Abrí tu navegador en `http://localhost:3000`
 
 ### Hardhat (apps/hardhat):
 
+#### Compilación y Testing:
+
 ```bash
 npm run compile      # Compilar contratos
 npm run test         # Ejecutar tests
-npm run node         # Iniciar red local
-npm run deploy:local # Desplegar en red local
-npm run deploy:amoy  # Desplegar en Polygon Amoy
-npm run copy-abis    # Copiar ABIs al frontend
+npm run node         # Iniciar red local de Hardhat
+```
+
+#### Deploy Modular:
+
+```bash
+# Deploy COMPLETO (todos los contratos)
+npm run deploy:amoy           # Desplegar todo en Polygon Amoy
+npm run deploy:sepolia        # Desplegar todo en Sepolia
+npm run deploy:local          # Desplegar todo en localhost
+
+# Deploy MODULO DEFI (Damc, Rey, Chef)
+npm run deploy:defi:amoy      # Solo DeFi en Amoy
+npm run deploy:defi:sepolia   # Solo DeFi en Sepolia
+npm run deploy:defi:local     # Solo DeFi en localhost
+
+# Deploy MODULO LOTTERY (Lottery, mainERC721)
+npm run deploy:lottery:amoy   # Solo Lottery en Amoy
+npm run deploy:lottery:sepolia # Solo Lottery en Sepolia
+npm run deploy:lottery:local  # Solo Lottery en localhost
+```
+
+#### Copia de ABIs Modular:
+
+```bash
+npm run copy-abis           # Copiar todos los ABIs (legacy)
+npm run copy-abis:all       # Copiar todos los ABIs
+npm run copy-abis:defi      # Copiar solo ABIs de DeFi
+npm run copy-abis:lottery   # Copiar solo ABIs de Lottery
 ```
 
 ### Frontend (apps/frontend):

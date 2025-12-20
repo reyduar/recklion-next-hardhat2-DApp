@@ -7,6 +7,10 @@ async function main() {
   const Damc = await hre.ethers.getContractFactory("DamcStakedToken");
   const Rey = await hre.ethers.getContractFactory("ReyRewardToken");
   const Chef = await hre.ethers.getContractFactory("MasterChefToken");
+  const Lottery = await hre.ethers.getContractFactory("Lottery");
+
+  const lottery = await Lottery.deploy();
+  await lottery.waitForDeployment();
 
   const damc = await Damc.deploy();
   await damc.waitForDeployment();
@@ -23,6 +27,7 @@ async function main() {
   console.log("✅ Damc:", await damc.getAddress());
   console.log("✅ Rey :", await rey.getAddress());
   console.log("✅ Chef:", await chef.getAddress());
+  console.log("✅ Lottery:", await lottery.getAddress());
 }
 
 main().catch((e) => {

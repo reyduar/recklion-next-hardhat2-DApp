@@ -10,6 +10,8 @@ const wanted = [
   "DamcStakedToken.sol/DamcStakedToken.json",
   "ReyRewardToken.sol/ReyRewardToken.json",
   "MasterChefToken.sol/MasterChefToken.json",
+  "Lottery.sol/Lottery.json",
+  "Lottery.sol/mainERC721.json",
 ];
 
 for (const rel of wanted) {

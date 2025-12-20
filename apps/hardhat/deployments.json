@@ -1,0 +1,19 @@
+{
+  "localhost": {},
+  "ganache": {},
+  "sepoliaInfura": {},
+  "polygonAmoy": {
+    "Lottery": {
+      "address": "0x9b1202d5b3Fac25574Fe2fe565c5476B60009a8b",
+      "deployer": "0x329Ea8998809812f37547F0361aBaE2D15683B88",
+      "timestamp": 1766243487583,
+      "blockNumber": 30860581
+    },
+    "LotteryNFT": {
+      "address": "0x5a9a18E68746EA81E7eD96368745E3A3eC131D20",
+      "deployer": "0x329Ea8998809812f37547F0361aBaE2D15683B88",
+      "timestamp": 1766243487817,
+      "blockNumber": 30860581
+    }
+  }
+}
