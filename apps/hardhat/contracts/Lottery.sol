@@ -16,7 +16,7 @@ contract Lottery is ERC20, Ownable {
 
     // Constructor
     constructor() ERC20("Lottery", "RELO") {
-        _mint(address(this), 1000); // esta instruccion hace que se refencie al SC como propietario de los tokens
+        _mint(address(this), 1000 * 10 ** 18); // Mintea 1000 tokens (con 18 decimales)
         nft = address(new mainERC721());
     }
 

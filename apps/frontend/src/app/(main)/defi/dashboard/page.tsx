@@ -1,10 +1,5 @@
 "use client";
-import {
-  FundMasterChef,
-  IssueRewards,
-  TransferStakeToken,
-  TransferTokenFarm,
-} from "@/components";
+import { FundMasterChef, IssueRewards, TransferTokenFarm } from "@/components";
 
 export default function DashboardDefiPage() {
   return (
