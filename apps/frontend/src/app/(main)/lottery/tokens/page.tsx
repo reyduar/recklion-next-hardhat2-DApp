@@ -19,10 +19,16 @@ type CompraTokensForm = {
   numTokens: string;
 };
 
+type DevolucionTokensForm = {
+  numTokens: string;
+};
+
 export default function LoteriaPage() {
   const { address, isConnected } = useAccount();
   const [isCompraSuccess, setIsCompraSuccess] = useState(false);
+  const [isDevolucionSuccess, setIsDevolucionSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [errorDevolucion, setErrorDevolucion] = useState("");
 
   // Form para compra de tokens
   const {
@@ -33,7 +39,16 @@ export default function LoteriaPage() {
     watch,
   } = useForm<CompraTokensForm>();
 
-  // Hook para escribir en el contrato
+  // Form para devolución de tokens
+  const {
+    register: registerDevolucion,
+    handleSubmit: handleSubmitDevolucion,
+    formState: { errors: errorsDevolucion },
+    reset: resetDevolucion,
+    watch: watchDevolucion,
+  } = useForm<DevolucionTokensForm>();
+
+  // Hook para escribir en el contrato (compra)
   const {
     data: hash,
     writeContract,
@@ -41,13 +56,29 @@ export default function LoteriaPage() {
     error: writeError,
   } = useWriteContract();
 
-  // Hook para esperar la confirmación de la transacción
+  // Hook para escribir en el contrato (devolución)
+  const {
+    data: hashDevolucion,
+    writeContract: writeContractDevolucion,
+    isPending: isPendingDevolucion,
+    error: writeErrorDevolucion,
+  } = useWriteContract();
+
+  // Hook para esperar la confirmación de la transacción (compra)
   const { isLoading: isConfirming, isSuccess: isConfirmed } =
     useWaitForTransactionReceipt({
       hash,
     });
 
-  // Efecto para manejar el éxito de la transacción
+  // Hook para esperar la confirmación de la transacción (devolución)
+  const {
+    isLoading: isConfirmingDevolucion,
+    isSuccess: isConfirmedDevolucion,
+  } = useWaitForTransactionReceipt({
+    hash: hashDevolucion,
+  });
+
+  // Efecto para manejar el éxito de la transacción de compra
   React.useEffect(() => {
     if (isConfirmed) {
       setIsCompraSuccess(true);
@@ -57,7 +88,17 @@ export default function LoteriaPage() {
     }
   }, [isConfirmed, reset]);
 
-  // Efecto para manejar errores
+  // Efecto para manejar el éxito de la transacción de devolución
+  React.useEffect(() => {
+    if (isConfirmedDevolucion) {
+      setIsDevolucionSuccess(true);
+      setErrorDevolucion("");
+      resetDevolucion();
+      setTimeout(() => setIsDevolucionSuccess(false), 5000);
+    }
+  }, [isConfirmedDevolucion, resetDevolucion]);
+
+  // Efecto para manejar errores de compra
   React.useEffect(() => {
     if (writeError) {
       const errorMsg = (writeError as any)?.shortMessage || writeError.message;
@@ -66,8 +107,22 @@ export default function LoteriaPage() {
     }
   }, [writeError]);
 
-  // Observar el valor del input
+  // Efecto para manejar errores de devolución
+  React.useEffect(() => {
+    if (writeErrorDevolucion) {
+      const errorMsg =
+        (writeErrorDevolucion as any)?.shortMessage ||
+        writeErrorDevolucion.message;
+      setErrorDevolucion(errorMsg);
+      setTimeout(() => setErrorDevolucion(""), 10000);
+    }
+  }, [writeErrorDevolucion]);
+
+  // Observar el valor del input de compra
   const numTokensValue = watch("numTokens");
+
+  // Observar el valor del input de devolución
+  const numTokensDevolucionValue = watchDevolucion("numTokens");
 
   // Balance de tokens del Smart Contract
   const { data: balanceTokensSC, isLoading: loadingSC } = useReadContract({
@@ -109,14 +164,14 @@ export default function LoteriaPage() {
   const onCompraTokens = async (data: CompraTokensForm) => {
     try {
       setErrorMessage("");
-      // IMPORTANTE: El contrato espera el número de tokens SIN decimales
-      // porque internamente ya multiplica por 1 ether
-      const numTokens = BigInt(data.numTokens);
-      const value = parseEther(data.numTokens); // El valor sí debe estar en wei
+      // El contrato espera _numTokens como número entero (1, 2, 3...)
+      // Internamente el contrato multiplica por 1e18 para la transferencia
+      const numTokens = BigInt(Math.floor(parseFloat(data.numTokens)));
+      const value = parseEther(data.numTokens); // Valor en ETH
 
       console.log("🔍 Datos de compra:", {
-        numTokens: data.numTokens,
-        numTokensValue: numTokens.toString(),
+        numTokensInput: data.numTokens,
+        numTokensInteger: numTokens.toString(),
         valueWei: value.toString(),
         balanceTokensSC: balanceTokensSC?.toString(),
         address: LOTTERY_ADDRESS,
@@ -128,16 +183,10 @@ export default function LoteriaPage() {
         return;
       }
 
-      // El balance del SC está en wei, necesitamos comparar números enteros
-      const balanceSCTokens = balanceTokensSC
-        ? (balanceTokensSC as bigint) / BigInt(10 ** 18)
-        : BigInt(0);
-
-      // Validar que haya suficientes tokens en el SC
-      if (balanceSCTokens < numTokens) {
-        setErrorMessage(
-          `No hay suficientes tokens. Disponibles: ${balanceSCTokens.toString()}`
-        );
+      // El balance del SC está en wei, convertimos numTokens a wei para comparar
+      const numTokensWei = numTokens * BigInt(10 ** 18);
+      if (balanceTokensSC && numTokensWei > (balanceTokensSC as bigint)) {
+        setErrorMessage(`No hay suficientes tokens disponibles en el contrato`);
         return;
       }
 
@@ -157,6 +206,58 @@ export default function LoteriaPage() {
         error?.message ||
         "Error desconocido al procesar la compra";
       setErrorMessage(errorMsg);
+    }
+  };
+
+  // Función para devolver tokens
+  const onDevolucionTokens = async (data: DevolucionTokensForm) => {
+    try {
+      setErrorDevolucion("");
+      // El contrato espera _numTokens como número entero (1, 2, 3...)
+      // Internamente el contrato multiplica por 1e18 para la transferencia
+      const numTokens = BigInt(Math.floor(parseFloat(data.numTokens)));
+
+      console.log("🔍 Datos de devolución:", {
+        numTokensInput: data.numTokens,
+        numTokensInteger: numTokens.toString(),
+        balanceTokensUser: balanceTokensUser?.toString(),
+        address: LOTTERY_ADDRESS,
+      });
+
+      // Validar que el valor sea positivo
+      if (numTokens <= BigInt(0)) {
+        setErrorDevolucion("La cantidad debe ser mayor a 0");
+        return;
+      }
+
+      // El balance del usuario está en wei, convertimos numTokens a wei para comparar
+      const numTokensWei = numTokens * BigInt(10 ** 18);
+      if (balanceTokensUser && numTokensWei > (balanceTokensUser as bigint)) {
+        setErrorDevolucion(
+          `No tienes suficientes tokens. Tu balance: ${parseFloat(
+            formatUnits(balanceTokensUser as bigint, 18)
+          ).toFixed(2)} RELO`
+        );
+        return;
+      }
+
+      console.log(
+        "✅ Validaciones pasadas, enviando transacción de devolución..."
+      );
+
+      writeContractDevolucion({
+        address: LOTTERY_ADDRESS,
+        abi: LotteryABI.abi,
+        functionName: "devolverTokens",
+        args: [numTokens],
+      });
+    } catch (error: any) {
+      console.error("❌ Error al devolver tokens:", error);
+      const errorMsg =
+        error?.shortMessage ||
+        error?.message ||
+        "Error desconocido al procesar la devolución";
+      setErrorDevolucion(errorMsg);
     }
   };
 
@@ -217,7 +318,9 @@ export default function LoteriaPage() {
                       <div className="flex flex-col gap-1">
                         <span className="text-2xl font-bold text-white">
                           {balanceTokensUser
-                            ? formatUnits(balanceTokensUser as bigint, 18)
+                            ? parseFloat(
+                                formatUnits(balanceTokensUser as bigint, 18)
+                              ).toFixed(2)
                             : "0"}
                         </span>
                         <span className="text-xs text-gray-400">
@@ -229,7 +332,9 @@ export default function LoteriaPage() {
                       <div className="flex flex-col gap-1">
                         <span className="text-2xl font-bold text-white">
                           {balanceTokensSC
-                            ? formatUnits(balanceTokensSC as bigint, 18)
+                            ? parseFloat(
+                                formatUnits(balanceTokensSC as bigint, 18)
+                              ).toFixed(2)
                             : "0"}
                         </span>
                         <span className="text-xs text-gray-400">
@@ -391,17 +496,16 @@ export default function LoteriaPage() {
                       {...register("numTokens", {
                         required: "La cantidad es requerida",
                         pattern: {
-                          value: /^[0-9]+$/,
-                          message:
-                            "Debe ser un número entero válido (sin decimales)",
+                          value: /^[0-9]*\.?[0-9]+$/,
+                          message: "Debe ser un número válido",
                         },
                         validate: {
                           positive: (value) =>
-                            parseInt(value) > 0 ||
+                            parseFloat(value) > 0 ||
                             "La cantidad debe ser mayor a 0",
                         },
                       })}
-                      type="number"
+                      type="text"
                       placeholder="Ej: 10"
                       classNames={{
                         input: "bg-gray-900 text-white",
@@ -462,10 +566,6 @@ export default function LoteriaPage() {
                         <ul className="space-y-1 list-disc list-inside">
                           <li>1 Token RELO = 1 ETH/MATIC (según tu red)</li>
                           <li>
-                            ⚠️ Solo puedes comprar tokens en números enteros (1,
-                            2, 3...)
-                          </li>
-                          <li>
                             Los tokens se transferirán instantáneamente a tu
                             wallet
                           </li>
@@ -512,6 +612,230 @@ export default function LoteriaPage() {
                   </p>
                   <p className="text-xs text-gray-400">
                     Recibe tus tokens en segundos después de la confirmación
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardBody>
+      </Card>
+
+      {/* Card de Devolución de Tokens */}
+      <Card className="bg-gray-900/50 border border-gray-800 mt-6">
+        <CardHeader className="border-b border-gray-800 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="text-3xl">↩️</div>
+            <div>
+              <h2 className="text-2xl font-semibold text-white">
+                Devolución de Tokens ERC-20
+              </h2>
+              <p className="text-sm text-gray-400 mt-1">
+                Devuelve tokens RELO y recibe ETH/MATIC a cambio
+              </p>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardBody className="p-8">
+          {!isConnected ? (
+            <div className="text-center py-8">
+              <p className="text-gray-400">
+                Conecta tu wallet para devolver tokens
+              </p>
+            </div>
+          ) : (
+            <div className="max-w-2xl mx-auto">
+              {/* Mensajes de estado */}
+              {isDevolucionSuccess && (
+                <div className="mb-6 bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">✅</span>
+                    <div>
+                      <p className="text-green-300 font-semibold">
+                        ¡Devolución exitosa!
+                      </p>
+                      <p className="text-sm text-gray-400">
+                        Los ETH/MATIC han sido transferidos a tu wallet
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {errorDevolucion && (
+                <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">❌</span>
+                    <div>
+                      <p className="text-red-300 font-semibold">
+                        Error en la transacción
+                      </p>
+                      <p className="text-sm text-gray-400">{errorDevolucion}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isConfirmingDevolucion && (
+                <div className="mb-6 bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                    <div>
+                      <p className="text-blue-300 font-semibold">
+                        Confirmando transacción...
+                      </p>
+                      <p className="text-sm text-gray-400">
+                        Espera a que se confirme en la blockchain
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Alerta de información */}
+              <div className="mb-6 bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-4">
+                <div className="flex items-start gap-2">
+                  <span className="text-xl">ℹ️</span>
+                  <div className="flex-1">
+                    <p className="text-cyan-300 font-semibold text-sm mb-1">
+                      ¿Cómo funciona?
+                    </p>
+                    <ul className="text-xs text-gray-400 space-y-1">
+                      <li>• Devuelve tus tokens RELO y recibe ETH/MATIC</li>
+                      <li>• 1 Token RELO = 1 ETH/MATIC</li>
+                      <li>• El proceso es instantáneo y seguro</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Formulario de devolución */}
+              <form
+                onSubmit={handleSubmitDevolucion(onDevolucionTokens)}
+                className="space-y-6"
+              >
+                <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Cantidad de Tokens RELO a Devolver
+                    </label>
+                    <Input
+                      {...registerDevolucion("numTokens", {
+                        required: "La cantidad es requerida",
+                        pattern: {
+                          value: /^[0-9]*\.?[0-9]+$/,
+                          message: "Debe ser un número válido",
+                        },
+                        validate: {
+                          positive: (value) =>
+                            parseFloat(value) > 0 ||
+                            "La cantidad debe ser mayor a 0",
+                        },
+                      })}
+                      type="text"
+                      placeholder="Ej: 5"
+                      classNames={{
+                        input: "bg-gray-900 text-white",
+                        inputWrapper:
+                          "bg-gray-900 border-gray-700 hover:border-cyan-500 focus-within:border-cyan-500",
+                      }}
+                      size="lg"
+                      disabled={isPendingDevolucion || isConfirmingDevolucion}
+                    />
+                    {errorsDevolucion.numTokens && (
+                      <p className="text-red-400 text-sm mt-2">
+                        {errorsDevolucion.numTokens.message}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Información del retorno estimado */}
+                  {numTokensDevolucionValue &&
+                    !isNaN(parseFloat(numTokensDevolucionValue)) && (
+                      <div className="mt-4 bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm text-gray-400">
+                            Tokens a devolver:
+                          </span>
+                          <span className="text-white font-semibold">
+                            {numTokensDevolucionValue} RELO
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm text-gray-400">
+                            Recibirás:
+                          </span>
+                          <span className="text-green-400 font-semibold">
+                            {numTokensDevolucionValue} ETH/MATIC
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-400">
+                            Tu balance actual:
+                          </span>
+                          <span className="text-white font-semibold">
+                            {balanceTokensUser
+                              ? parseFloat(
+                                  formatUnits(balanceTokensUser as bigint, 18)
+                                ).toFixed(2)
+                              : "0"}{" "}
+                            RELO
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                  {/* Información de la devolución */}
+                  <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-4">
+                    <div className="flex items-start gap-2">
+                      <span className="text-xl">💡</span>
+                      <div className="flex-1 text-xs text-gray-300">
+                        <p className="font-semibold text-cyan-300 mb-1">
+                          Información de devolución:
+                        </p>
+                        <ul className="space-y-1 list-disc list-inside">
+                          <li>La transacción es inmediata</li>
+                          <li>Recibirás ETH/MATIC directamente en tu wallet</li>
+                          <li>Los tokens RELO volverán al Smart Contract</li>
+                          <li>No hay comisiones adicionales</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Botón de devolución */}
+                <Button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-semibold text-lg py-6 shadow-lg shadow-cyan-500/30 transition-all"
+                  size="lg"
+                  isLoading={isPendingDevolucion || isConfirmingDevolucion}
+                  isDisabled={isPendingDevolucion || isConfirmingDevolucion}
+                >
+                  {isPendingDevolucion
+                    ? "Esperando aprobación..."
+                    : isConfirmingDevolucion
+                    ? "Confirmando..."
+                    : "Devolver Tokens"}
+                </Button>
+              </form>
+
+              {/* Información adicional */}
+              <div className="mt-6 grid md:grid-cols-2 gap-4">
+                <div className="bg-gray-800/30 border border-gray-700 rounded-lg p-4">
+                  <p className="text-xs text-gray-300 mb-1 font-semibold">
+                    🔄 Reversible
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Puedes volver a comprar tokens cuando quieras
+                  </p>
+                </div>
+                <div className="bg-gray-800/30 border border-gray-700 rounded-lg p-4">
+                  <p className="text-xs text-gray-300 mb-1 font-semibold">
+                    💸 Liquidez Instantánea
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Convierte tus tokens en ETH/MATIC al instante
                   </p>
                 </div>
               </div>

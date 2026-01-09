@@ -78,15 +78,20 @@ contract Lottery is ERC20, Ownable {
             msg.value >= coste,
             "Compra menos tokens o paga con mas ethers"
         );
+        // Convertir _numTokens a unidades con decimales (wei)
+        uint256 tokensConDecimales = _numTokens * (10 ** 18);
         // Obtencion del numero de tokens ERC-20 disponibles
         uint256 balance = balanceTokensSC();
-        require(_numTokens <= balance, "Compra un numero menor de tokens");
+        require(
+            tokensConDecimales <= balance,
+            "Compra un numero menor de tokens"
+        );
         // Devolucion del dinero sobrante
         uint256 returnValue = msg.value - coste;
         // El Smart Contract devuelve la cantidad restante
         payable(msg.sender).transfer(returnValue);
-        // Envio de los tokens al cliente/usuario
-        _transfer(address(this), msg.sender, _numTokens);
+        // Envio de los tokens al cliente/usuario (en wei, con 18 decimales)
+        _transfer(address(this), msg.sender, tokensConDecimales);
     }
 
     // Devolucion de tokens al Smart Contract
@@ -96,14 +101,16 @@ contract Lottery is ERC20, Ownable {
             _numTokens > 0,
             "Necesitas devolver un numero de tokens mayor a 0"
         );
+        // Convertir _numTokens a unidades con decimales (wei)
+        uint256 tokensConDecimales = _numTokens * (10 ** 18);
         // El usuario debe acreditar tener los tokens que quiere devolver
         require(
-            _numTokens <= balanceTokens(msg.sender),
+            tokensConDecimales <= balanceTokens(msg.sender),
             "No tienes los tokens que deseas devolver"
         );
-        // El usuario transfiere los tokens al Smart Contract
-        _transfer(msg.sender, address(this), _numTokens);
-        // El Smart Contract envia los ethers al usuario
+        // El usuario transfiere los tokens al Smart Contract (en wei)
+        _transfer(msg.sender, address(this), tokensConDecimales);
+        // El Smart Contract envia los ethers al usuario (calculado con el numero entero)
         payable(msg.sender).transfer(precioTokens(_numTokens));
     }
 

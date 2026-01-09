@@ -4,16 +4,16 @@
   "sepoliaInfura": {},
   "polygonAmoy": {
     "Lottery": {
-      "address": "0x1277DC5e18293eAe073cf0ef54d65019bc534999",
+      "address": "0x7EF62A3378d4723e17600819dDb1c56390c949A2",
       "deployer": "0x329Ea8998809812f37547F0361aBaE2D15683B88",
-      "timestamp": 1766337716986,
-      "blockNumber": 30923399
+      "timestamp": 1767880218757,
+      "blockNumber": 31951690
     },
     "LotteryNFT": {
-      "address": "0xdB45D235404150d867878F9f82411C021dCB17fE",
+      "address": "0xa398e162cf3cdD17BcCCF13C56b98A0934EBDb74",
       "deployer": "0x329Ea8998809812f37547F0361aBaE2D15683B88",
-      "timestamp": 1766337717218,
-      "blockNumber": 30923399
+      "timestamp": 1767880219013,
+      "blockNumber": 31951690
     }
   }
 }
