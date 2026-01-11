@@ -3,24 +3,37 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useBalance } from "wagmi";
 import { Card, CardBody } from "@heroui/react";
+import { useEffect, useState } from "react";
 
 export default function Home() {
   const { address, isConnected } = useAccount();
+  const [mounted, setMounted] = useState(false);
+
+  const chainId = process.env.NEXT_PUBLIC_CHAIN_ID
+    ? parseInt(process.env.NEXT_PUBLIC_CHAIN_ID)
+    : 1337;
+
+  const chainName = process.env.NEXT_PUBLIC_CHAIN_NAME || "Ganache Testnet";
+
   const { data: balanceData, isLoading: balanceLoading } = useBalance({
     address,
-    chainId: 80002, // Polygon Amoy
+    chainId: chainId,
     query: {
       enabled: !!address,
       refetchInterval: 10_000, // refresca cada 10 segundos
     },
   });
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <>
       <div className="container mx-auto max-w-7xl">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">Wallet</h1>
-          <p className="text-gray-400">Polygon Amoy Wallet</p>
+          <p className="text-gray-400">{chainName}</p>
         </div>
 
         <Card className="bg-gray-900/50 border border-gray-800">
@@ -29,7 +42,7 @@ export default function Home() {
               {/* Wallet connect */}
               <ConnectButton />
 
-              {isConnected && (
+              {mounted && isConnected && (
                 <div className="mt-6 p-6 bg-gray-100 rounded-2xl shadow-md w-[360px] text-left mx-auto">
                   <p className="font-semibold text-gray-700 mb-2">Cuenta:</p>
                   <p className="break-all text-gray-800">

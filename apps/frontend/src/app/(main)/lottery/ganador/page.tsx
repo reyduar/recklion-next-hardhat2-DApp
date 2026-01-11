@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardBody, CardHeader, Button } from "@heroui/react";
 import {
   useAccount,
@@ -15,8 +15,13 @@ const LOTTERY_ADDRESS = process.env
 
 export default function GanadorPage() {
   const { address, isConnected } = useAccount();
+  const [mounted, setMounted] = useState(false);
   const [isGeneracionSuccess, setIsGeneracionSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Hook para escribir en el contrato
   const {
@@ -147,10 +152,12 @@ export default function GanadorPage() {
         </CardHeader>
 
         <CardBody className="p-8">
-          {!isConnected ? (
+          {!mounted || !isConnected ? (
             <div className="text-center py-8">
               <p className="text-gray-400">
-                Conecta tu wallet para generar el ganador
+                {!mounted
+                  ? "Cargando..."
+                  : "Conecta tu wallet para generar el ganador"}
               </p>
             </div>
           ) : (
@@ -293,10 +300,12 @@ export default function GanadorPage() {
         </CardHeader>
 
         <CardBody className="p-8">
-          {!isConnected ? (
+          {!mounted || !isConnected ? (
             <div className="text-center py-8">
               <p className="text-gray-400">
-                Conecta tu wallet para ver el ganador
+                {!mounted
+                  ? "Cargando..."
+                  : "Conecta tu wallet para ver el ganador"}
               </p>
             </div>
           ) : loadingGanador ? (

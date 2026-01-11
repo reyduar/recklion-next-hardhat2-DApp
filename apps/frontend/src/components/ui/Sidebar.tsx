@@ -91,13 +91,12 @@ export const Sidebar = () => {
             className="w-9 h-9"
           />
           <div className="text-center w-full">
-            {isConnected && address ? (
-              <p className="text-[10px] font-medium text-gray-500 truncate px-1">
-                Admin
-              </p>
-            ) : (
-              <p className="text-[10px] font-medium text-gray-500">Account</p>
-            )}
+            <p
+              className="text-[10px] font-medium text-gray-500 truncate px-1"
+              suppressHydrationWarning
+            >
+              {isConnected && address ? "Admin" : "Account"}
+            </p>
           </div>
         </Link>
       </div>

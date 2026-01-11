@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardBody, CardHeader, Button, Input } from "@heroui/react";
 import {
   useAccount,
@@ -25,10 +25,15 @@ type DevolucionTokensForm = {
 
 export default function LoteriaPage() {
   const { address, isConnected } = useAccount();
+  const [mounted, setMounted] = useState(false);
   const [isCompraSuccess, setIsCompraSuccess] = useState(false);
   const [isDevolucionSuccess, setIsDevolucionSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [errorDevolucion, setErrorDevolucion] = useState("");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Form para compra de tokens
   const {
@@ -285,10 +290,12 @@ export default function LoteriaPage() {
         </CardHeader>
 
         <CardBody className="p-8">
-          {!isConnected ? (
+          {!mounted || !isConnected ? (
             <div className="text-center py-8">
               <p className="text-gray-400">
-                Conecta tu wallet para ver los balances
+                {!mounted
+                  ? "Cargando..."
+                  : "Conecta tu wallet para ver los balances"}
               </p>
             </div>
           ) : isLoading ? (
@@ -405,10 +412,12 @@ export default function LoteriaPage() {
         </CardHeader>
 
         <CardBody className="p-8">
-          {!isConnected ? (
+          {!mounted || !isConnected ? (
             <div className="text-center py-8">
               <p className="text-gray-400">
-                Conecta tu wallet para comprar tokens
+                {!mounted
+                  ? "Cargando..."
+                  : "Conecta tu wallet para comprar tokens"}
               </p>
             </div>
           ) : (
@@ -637,10 +646,12 @@ export default function LoteriaPage() {
         </CardHeader>
 
         <CardBody className="p-8">
-          {!isConnected ? (
+          {!mounted || !isConnected ? (
             <div className="text-center py-8">
               <p className="text-gray-400">
-                Conecta tu wallet para devolver tokens
+                {!mounted
+                  ? "Cargando..."
+                  : "Conecta tu wallet para devolver tokens"}
               </p>
             </div>
           ) : (
