@@ -1,6 +1,49 @@
 {
   "localhost": {},
-  "ganache": {},
+  "ganache": {
+    "Lottery": {
+      "address": "0xCa002560d9A20be95fc11aFf4bd71F7AE672d8b0",
+      "deployer": "0xCCD83B0A10bd51DFaF079A9b361b3dEE89b613F9",
+      "timestamp": 1768065622003,
+      "blockNumber": 1
+    },
+    "LotteryNFT": {
+      "address": "0x45c7e890A023464EC5c2691ce66b8b39ecc563c9",
+      "deployer": "0xCCD83B0A10bd51DFaF079A9b361b3dEE89b613F9",
+      "timestamp": 1768065622022,
+      "blockNumber": 1
+    },
+    "DamcStakedToken": {
+      "address": "0x0b69a5A660dFAdfF3B6307d32cdC54E6aa6643Af",
+      "deployer": "0xCCD83B0A10bd51DFaF079A9b361b3dEE89b613F9",
+      "timestamp": 1768066111696,
+      "blockNumber": 2
+    },
+    "ReyRewardToken": {
+      "address": "0x7082362540b12F32e20e47602190f5f77DA664e8",
+      "deployer": "0xCCD83B0A10bd51DFaF079A9b361b3dEE89b613F9",
+      "timestamp": 1768066111865,
+      "blockNumber": 3
+    },
+    "MasterChefToken": {
+      "address": "0x9468c75157322Fd9fBe276767d7830718d58fCe1",
+      "deployer": "0xCCD83B0A10bd51DFaF079A9b361b3dEE89b613F9",
+      "timestamp": 1768066111971,
+      "blockNumber": 4
+    },
+    "NFT": {
+      "address": "0xbfAC6eb987F40f52bcc70989E4bff784b66bCCF7",
+      "deployer": "0xCCD83B0A10bd51DFaF079A9b361b3dEE89b613F9",
+      "timestamp": 1768233812889,
+      "blockNumber": 13
+    },
+    "Marketplace": {
+      "address": "0xF62787A2917a199c4eC7B39A0a95499601299497",
+      "deployer": "0xCCD83B0A10bd51DFaF079A9b361b3dEE89b613F9",
+      "timestamp": 1768233812953,
+      "blockNumber": 14
+    }
+  },
   "sepoliaInfura": {},
   "polygonAmoy": {
     "Lottery": {

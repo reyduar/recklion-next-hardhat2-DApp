@@ -18,12 +18,15 @@ const modules = {
     "MasterChefToken.sol/MasterChefToken.json",
   ],
   lottery: ["Lottery.sol/Lottery.json", "Lottery.sol/mainERC721.json"],
+  marketplace: ["NFT.sol/NFT.json", "Marketplace.sol/Marketplace.json"],
   all: [
     "DamcStakedToken.sol/DamcStakedToken.json",
     "ReyRewardToken.sol/ReyRewardToken.json",
     "MasterChefToken.sol/MasterChefToken.json",
     "Lottery.sol/Lottery.json",
     "Lottery.sol/mainERC721.json",
+    "NFT.sol/NFT.json",
+    "Marketplace.sol/Marketplace.json",
   ],
 };
 
