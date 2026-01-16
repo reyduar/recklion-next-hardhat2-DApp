@@ -7,6 +7,7 @@ import { Avatar } from "@heroui/react";
 import { PiWalletBold } from "react-icons/pi";
 import { HiOutlineCubeTransparent } from "react-icons/hi2";
 import { MdOutlineHowToVote } from "react-icons/md";
+import { MdStorefront } from "react-icons/md";
 import { useAccount } from "wagmi";
 
 interface NavItem {
@@ -30,6 +31,11 @@ const navItems: NavItem[] = [
     name: "Lottery",
     href: "/lottery",
     icon: MdOutlineHowToVote,
+  },
+  {
+    name: "Marketplace",
+    href: "/marketplace",
+    icon: MdStorefront,
   },
 ];
 

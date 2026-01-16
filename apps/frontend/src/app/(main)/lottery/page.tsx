@@ -23,6 +23,12 @@ export default function LotteryPage() {
   const { address, isConnected } = useAccount();
   const [isCompraSuccess, setIsCompraSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Evitar hydration mismatch
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Form para compra de boletos
   const {
@@ -198,7 +204,11 @@ export default function LotteryPage() {
         </CardHeader>
 
         <CardBody className="p-8">
-          {!isConnected ? (
+          {!isMounted ? (
+            <div className="text-center py-8">
+              <p className="text-gray-400">Cargando...</p>
+            </div>
+          ) : !isConnected ? (
             <div className="text-center py-8">
               <p className="text-gray-400">
                 Conecta tu wallet para comprar boletos
