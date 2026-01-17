@@ -5,6 +5,7 @@ import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HeroUIProvider } from "@heroui/react";
 import { config } from "@/config/wagmi";
+import { ToastProvider } from "@heroui/toast";
 import "@rainbow-me/rainbowkit/styles.css";
 
 const queryClient = new QueryClient();
@@ -14,7 +15,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider>
-          <HeroUIProvider>{children}</HeroUIProvider>
+          <HeroUIProvider>
+            <ToastProvider />
+            {children}
+          </HeroUIProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
