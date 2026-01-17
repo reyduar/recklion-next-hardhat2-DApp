@@ -19,11 +19,12 @@ const config: HardhatUserConfig = {
   },
   networks: {
     localhost: {
-      url: "http://127.0.0.1:8545",
+      url: "http://127.0.0.1:7545",
     },
     ganache: {
-      url: RPC_GANACHE || "",
+      url: RPC_GANACHE || "http://127.0.0.1:7545",
       chainId: CHAIN_ID_GANACHE ? parseInt(CHAIN_ID_GANACHE) : 1337,
+      accounts: MNEMONIC ? { mnemonic: MNEMONIC } : undefined,
     },
     sepoliaInfura: {
       url: RPC_SEPOLIA || "",

@@ -9,11 +9,14 @@
 
 Imaginate que tenés una alcancía mágica: cuando ponés tus monedas adentro, esa alcancía te regala más monedas como premio por guardarlas ahí. **Eso es exactamente lo que hace este proyecto, pero con criptomonedas en internet.**
 
-Este es un proyecto completo de **DeFi (Finanzas Descentralizadas)** donde los usuarios pueden:
+Este es un proyecto completo de **DeFi (Finanzas Descentralizadas)** y **NFT Marketplace** donde los usuarios pueden:
 
 - 💰 **Hacer Staking** (guardar sus tokens DAMC)
 - 🎁 **Recibir Recompensas** (ganar tokens REY como premio)
 - 💸 **Retirar sus tokens** cuando quieran
+- 🎰 **Participar en loterías** con tokens ERC-20
+- 🎨 **Crear y vender NFTs** en un marketplace descentralizado
+- 🛒 **Comprar NFTs** de otros usuarios con comisiones automáticas
 - 👀 **Ver su balance** en tiempo real conectando su wallet de MetaMask
 
 Todo funciona en la **red blockchain de Polygon Amoy** (una red de prueba gratuita) y está construido con tecnologías modernas y seguras.
@@ -45,9 +48,10 @@ Este proyecto es un **monorepo**, lo que significa que es como una casa con dos 
 
 **Archivos importantes:**
 
-- `contracts/` - Donde viven los 3 contratos inteligentes
-- `scripts/deploy.ts` - El script que sube los contratos a la blockchain
+- `contracts/` - Donde viven los 7 contratos inteligentes
+- `scripts/deploy-*.ts` - Scripts modulares de despliegue
 - `hardhat.config.ts` - La configuración de redes y compilador
+- `deployments.json` - Registro de todas las direcciones desplegadas
 
 ### 🎨 Piso 2: Frontend (Interfaz Web)
 
@@ -66,9 +70,11 @@ El frontend es la parte bonita que los usuarios ven en su navegador, donde puede
 
 ---
 
-## 🎯 Los 3 Contratos Inteligentes
+## 🎯 Los Contratos Inteligentes
 
-### 1. 🪙 DamcStakedToken (DAMC)
+### Módulo DeFi
+
+#### 1. 🪙 DamcStakedToken (DAMC)
 
 **¿Qué hace?** Es el token que los usuarios van a "guardar" en el contrato para hacer staking.
 
@@ -88,9 +94,7 @@ El frontend es la parte bonita que los usuarios ven en su navegador, donde puede
 
 **Ubicación:** `apps/hardhat/contracts/DamcStakedToken.sol`
 
----
-
-### 2. 👑 ReyRewardToken (REY)
+#### 2. 👑 ReyRewardToken (REY)
 
 **¿Qué hace?** Es el token de recompensa que los usuarios reciben como premio por hacer staking.
 
@@ -110,9 +114,7 @@ El frontend es la parte bonita que los usuarios ven en su navegador, donde puede
 
 **Ubicación:** `apps/hardhat/contracts/ReyRewardToken.sol`
 
----
-
-### 3. 👨‍🍳 MasterChefToken (El Jefe del Staking)
+#### 3. 👨‍🍳 MasterChefToken (El Jefe del Staking)
 
 **¿Qué hace?** Es el contrato principal, el "jefe" que maneja todo el sistema de staking. Es como el dueño de la alcancía mágica.
 
@@ -193,6 +195,231 @@ issueTokens();
 
 ---
 
+### Módulo Marketplace: Compra y Venta de NFTs
+
+El **módulo Marketplace** permite a los usuarios crear, comprar y vender NFTs (tokens no fungibles) en un mercado descentralizado. Es como un **Mercado Libre o eBay** pero en blockchain, donde nadie puede censurar las ventas y las comisiones son automáticas.
+
+#### 4. 🎨 NFT (Recklion NFT Contract)
+
+**¿Qué hace?** Es el contrato que permite crear (mintear) NFTs únicos y coleccionables. Cada NFT es como una obra de arte digital certificada en la blockchain.
+
+**Características:**
+
+- Nombre: **Recklion NFT**
+- Símbolo: **RKL**
+- Estándar: **ERC-721** (el estándar para NFTs)
+- Cada NFT tiene un **tokenId único** (1, 2, 3, ...)
+- Cada NFT tiene un **tokenURI** que apunta a sus metadatos (imagen, descripción, propiedades)
+
+**Funciones principales:**
+
+##### 🖼️ `mint(string memory _tokenURI) returns (uint)`
+
+Permite crear un nuevo NFT con metadatos personalizados.
+
+**¿Qué hace?**
+
+1. Incrementa el contador de tokens (`tokenCount++`)
+2. Crea el NFT y lo asigna al usuario que llama (`_safeMint`)
+3. Asocia el URI de metadatos al NFT (`_setTokenURI`)
+4. Devuelve el ID del nuevo NFT creado
+
+**Ejemplo de uso:**
+
+```javascript
+// Crear un NFT con metadatos en IPFS
+const tokenURI = "ipfs://QmXx.../metadata.json";
+const tokenId = await nft.mint(tokenURI);
+// Devuelve: 1 (el primer NFT)
+```
+
+**¿Qué es el tokenURI?**
+
+Es un link (normalmente a IPFS) que contiene los metadatos del NFT en formato JSON:
+
+```json
+{
+  "name": "Mi NFT Épico #1",
+  "description": "Un NFT único creado en Recklion",
+  "image": "ipfs://QmYy.../imagen.png",
+  "attributes": [
+    { "trait_type": "Rareza", "value": "Legendario" },
+    { "trait_type": "Color", "value": "Dorado" }
+  ]
+}
+```
+
+**Ubicación:** `apps/hardhat/contracts/NFT.sol`
+
+---
+
+#### 5. 🛒 Marketplace (El Mercado de NFTs)
+
+**¿Qué hace?** Es el contrato que gestiona el marketplace donde los usuarios pueden listar sus NFTs para la venta y otros usuarios pueden comprarlos. El contrato cobra una comisión automática por cada venta.
+
+**Características:**
+
+- **feePercent:** 1% de comisión por cada venta
+- **feeAccount:** Cuenta del owner que recibe las comisiones
+- **itemCount:** Contador de items listados en el marketplace
+- **Seguridad:** Usa `ReentrancyGuard` para prevenir ataques de reentrancy
+
+**Estructuras de datos:**
+
+```solidity
+struct Item {
+    uint itemId;                // ID único del item en el marketplace
+    IERC721 nft;                // Dirección del contrato NFT
+    uint tokenId;               // ID del NFT dentro del contrato
+    uint price;                 // Precio en ETH/MATIC
+    address payable seller;     // Vendedor del NFT
+    bool sold;                  // Si ya fue vendido
+}
+
+mapping(uint => Item) public items;  // Todos los items del marketplace
+```
+
+**Eventos:**
+
+```solidity
+event Offered(uint itemId, address indexed nft, uint tokenId, uint price, address indexed seller);
+event Bought(uint itemId, address indexed nft, uint tokenId, uint price, address indexed seller, address indexed buyer);
+```
+
+**Funciones principales:**
+
+##### 📝 `makeItem(IERC721 _nft, uint _tokenId, uint _price)`
+
+Permite a un usuario listar su NFT para la venta en el marketplace.
+
+**¿Qué hace?**
+
+1. Valida que el precio sea mayor a 0
+2. Incrementa el contador de items
+3. Transfiere el NFT del vendedor al contrato (custodia)
+4. Crea un nuevo `Item` con toda la información
+5. Emite el evento `Offered`
+
+**Flujo de uso:**
+
+```javascript
+// 1. Usuario aprueba al marketplace para mover su NFT
+await nft.approve(marketplaceAddress, tokenId);
+
+// 2. Usuario lista el NFT por 1 MATIC
+await marketplace.makeItem(nftAddress, tokenId, ethers.parseEther("1"));
+// Ahora el NFT está custodiado por el contrato y listo para vender
+```
+
+**⚠️ Importante:** El usuario DEBE aprobar primero al marketplace para que pueda transferir su NFT.
+
+##### 💰 `purchaseItem(uint _itemId) payable`
+
+Permite a un usuario comprar un NFT listado en el marketplace.
+
+**¿Qué hace?**
+
+1. Calcula el precio total con comisión (`getTotalPrice`)
+2. Valida que el item exista y no esté vendido
+3. Valida que el comprador envíe suficiente MATIC
+4. Transfiere el precio base al vendedor
+5. Transfiere la comisión al owner del marketplace
+6. Marca el item como vendido
+7. Transfiere el NFT del contrato al comprador
+8. Emite el evento `Bought`
+
+**Flujo de uso:**
+
+```javascript
+// Usuario compra el item #1
+const totalPrice = await marketplace.getTotalPrice(1);
+await marketplace.purchaseItem(1, { value: totalPrice });
+// El comprador recibe el NFT y el vendedor recibe el pago
+```
+
+**Distribución de pagos:**
+
+- **Vendedor:** Recibe el precio base (100% del precio listado)
+- **Owner:** Recibe el 1% de comisión
+- **Total que paga el comprador:** Precio + 1%
+
+**Ejemplo numérico:**
+
+```
+Precio listado: 1 MATIC
+Comisión (1%): 0.01 MATIC
+Total a pagar: 1.01 MATIC
+
+Vendedor recibe: 1 MATIC
+Owner recibe: 0.01 MATIC
+```
+
+##### 💵 `getTotalPrice(uint _itemId) view returns (uint)`
+
+Calcula el precio total que debe pagar el comprador (precio + comisión).
+
+**Fórmula:**
+
+```solidity
+totalPrice = (price * (100 + feePercent)) / 100
+```
+
+**Ejemplo:**
+
+```javascript
+const itemPrice = await marketplace.items(1).price; // 1 MATIC
+const totalPrice = await marketplace.getTotalPrice(1); // 1.01 MATIC
+```
+
+**Ubicación:** `apps/hardhat/contracts/Marketplace.sol`
+
+---
+
+### 🔒 Seguridad del Marketplace
+
+**ReentrancyGuard:**
+
+El contrato hereda de `ReentrancyGuard` de OpenZeppelin, que previene ataques de reentrada. Esto significa que nadie puede llamar recursivamente a las funciones durante una ejecución.
+
+**Validaciones:**
+
+- ✅ Precio mayor a 0
+- ✅ Item existe y no está vendido
+- ✅ Comprador envía suficiente ETH/MATIC
+- ✅ Las transferencias se hacen en orden seguro
+
+**Immutables:**
+
+- `feeAccount` y `feePercent` son **immutable**, no pueden cambiar después del deploy
+- Esto da transparencia total a los usuarios
+
+---
+
+### 🎯 Caso de Uso del Marketplace
+
+**Escenario: Artista Digital**
+
+1. **Ana** es una artista digital y crea una obra de arte
+2. Sube la imagen a IPFS y obtiene el hash
+3. Crea los metadatos JSON y los sube a IPFS
+4. Mintea un NFT con el URI de los metadatos
+5. Lista el NFT en el marketplace por 5 MATIC
+6. **Carlos** ve el NFT y le gusta
+7. Compra el NFT pagando 5.05 MATIC (5 + 1% comisión)
+8. Ana recibe 5 MATIC en su wallet
+9. El owner del marketplace recibe 0.05 MATIC
+10. Carlos ahora es el dueño del NFT
+
+**Beneficios:**
+
+- 🔓 **Descentralizado** - Nadie puede censurar las ventas
+- 💎 **Propiedad verificable** - El NFT está en la blockchain
+- 💰 **Pagos automáticos** - No hay intermediarios
+- 🔐 **Seguro** - Los NFTs están custodiados por el contrato
+- 📊 **Transparente** - Todas las ventas son públicas
+
+---
+
 ## 🌐 Red Blockchain: Polygon Amoy
 
 **¿Qué es Polygon Amoy?**
@@ -263,6 +490,7 @@ El proyecto cuenta con un **sistema modular** que permite desplegar contratos de
 - `scripts/deploy-all.ts` - Despliega TODOS los contratos
 - `scripts/deploy-defi.ts` - Despliega solo DeFi (Damc, Rey, Chef)
 - `scripts/deploy-lottery.ts` - Despliega solo Lottery
+- `scripts/deploy-marketplace.ts` - Despliega solo Marketplace (NFT + Marketplace)
 - `scripts/deployment-utils.ts` - Utilidades para manejar deployments
 
 **Scripts de ABIs:**
@@ -270,6 +498,7 @@ El proyecto cuenta con un **sistema modular** que permite desplegar contratos de
 - `scripts/copy-abis-module.cjs` - Script principal modular
 - `scripts/copy-abis-defi.cjs` - Copia ABIs de DeFi
 - `scripts/copy-abis-lottery.cjs` - Copia ABIs de Lottery
+- `scripts/copy-abis-marketplace.cjs` - Copia ABIs de Marketplace
 - `scripts/copy-abis.cjs` - Copia todos los ABIs
 
 **Registro de Deployments:**
@@ -297,6 +526,14 @@ npm run deploy:defi:sepolia  # Lo mismo en Sepolia
 ```bash
 npm run deploy:lottery:amoy     # Solo Lottery + copia sus ABIs
 npm run deploy:lottery:sepolia  # Lo mismo en Sepolia
+```
+
+##### Desplegar SOLO el módulo Marketplace:
+
+```bash
+npm run deploy:marketplace:amoy     # Solo NFT + Marketplace + copia sus ABIs
+npm run deploy:marketplace:sepolia  # Lo mismo en Sepolia
+npm run deploy:marketplace:ganache  # Lo mismo en Ganache
 ```
 
 #### ✨ Características del Sistema Modular:
@@ -356,14 +593,54 @@ Deployer: 0x329Ea8998809812f37547F0361aBaE2D15683B88
 📊 Resultado: 2 copiados, 0 errores
 ```
 
+#### 📊 Ejemplo de Uso: Desplegar Marketplace
+
+Si quieres agregar el módulo Marketplace:
+
+```bash
+# Despliega NFT y Marketplace con fee del 1%
+npm run deploy:marketplace:ganache
+```
+
+**Salida esperada:**
+
+```
+🚀 Deploying Marketplace Contracts
+────────────────────────────────────────────────────────
+Network: ganache
+Deployer: 0x329Ea8998809812f37547F0361aBaE2D15683B88
+────────────────────────────────────────────────────────
+
+⏳ Deploying NFT...
+✅ NFT deployed: 0x1234567890AbCdEf1234567890aBcDeF12345678
+
+⏳ Deploying Marketplace...
+   Fee Percent: 1%
+✅ Marketplace deployed: 0xAbCdEf1234567890aBcDeF1234567890AbCdEf12
+
+📦 Deployments on ganache:
+────────────────────────────────────────────────────────
+✅ NFT                  0x1234567890AbCdEf1234567890aBcDeF12345678
+✅ Marketplace           0xAbCdEf1234567890aBcDeF1234567890AbCdEf12
+────────────────────────────────────────────────────────
+
+📋 Copiando ABIs del módulo: marketplace
+────────────────────────────────────────────────────────
+✅ NFT.json
+✅ Marketplace.json
+────────────────────────────────────────────────────────
+📊 Resultado: 2 copiados, 0 errores
+```
+
 #### 🎯 Comandos de Copia de ABIs (Manual)
 
 Si necesitas copiar ABIs sin hacer deploy:
 
 ```bash
-npm run copy-abis:all      # Copia todos los ABIs
-npm run copy-abis:defi     # Copia solo ABIs de DeFi
-npm run copy-abis:lottery  # Copia solo ABIs de Lottery
+npm run copy-abis:all         # Copia todos los ABIs
+npm run copy-abis:defi        # Copia solo ABIs de DeFi
+npm run copy-abis:lottery     # Copia solo ABIs de Lottery
+npm run copy-abis:marketplace # Copia solo ABIs de Marketplace
 ```
 
 ### Paso 5: Verificar y Usar las Direcciones Desplegadas
@@ -382,7 +659,9 @@ Las direcciones de los contratos se guardan **automáticamente** en `apps/hardha
     "ReyRewardToken": { ... },
     "MasterChefToken": { ... },
     "Lottery": { ... },
-    "LotteryNFT": { ... }
+    "LotteryNFT": { ... },
+    "NFT": { ... },
+    "Marketplace": { ... }
   }
 }
 ```
@@ -398,6 +677,10 @@ NEXT_PUBLIC_CHEF_ADDRESS="0xGHI789..."
 # Lottery Contracts
 NEXT_PUBLIC_LOTTERY_ADDRESS="0x9b1202d5b3Fac25574Fe2fe565c5476B60009a8b"
 NEXT_PUBLIC_LOTTERY_NFT_ADDRESS="0x5a9a18E68746EA81E7eD96368745E3A3eC131D20"
+
+# Marketplace Contracts
+NEXT_PUBLIC_NFT_ADDRESS="0x1234567890AbCdEf1234567890aBcDeF12345678"
+NEXT_PUBLIC_MARKETPLACE_ADDRESS="0xAbCdEf1234567890aBcDeF1234567890AbCdEf12"
 ```
 
 **💡 Tip:** El archivo `deployments.json` te permite ver el historial completo de todos los contratos desplegados en cada red.
@@ -711,15 +994,22 @@ npm run deploy:defi:local     # Solo DeFi en localhost
 npm run deploy:lottery:amoy   # Solo Lottery en Amoy
 npm run deploy:lottery:sepolia # Solo Lottery en Sepolia
 npm run deploy:lottery:local  # Solo Lottery en localhost
+
+# Deploy MODULO MARKETPLACE (NFT, Marketplace)
+npm run deploy:marketplace:amoy     # Solo Marketplace en Amoy
+npm run deploy:marketplace:sepolia  # Solo Marketplace en Sepolia
+npm run deploy:marketplace:ganache  # Solo Marketplace en Ganache
+npm run deploy:marketplace:local    # Solo Marketplace en localhost
 ```
 
 #### Copia de ABIs Modular:
 
 ```bash
-npm run copy-abis           # Copiar todos los ABIs (legacy)
-npm run copy-abis:all       # Copiar todos los ABIs
-npm run copy-abis:defi      # Copiar solo ABIs de DeFi
-npm run copy-abis:lottery   # Copiar solo ABIs de Lottery
+npm run copy-abis              # Copiar todos los ABIs (legacy)
+npm run copy-abis:all          # Copiar todos los ABIs
+npm run copy-abis:defi         # Copiar solo ABIs de DeFi
+npm run copy-abis:lottery      # Copiar solo ABIs de Lottery
+npm run copy-abis:marketplace  # Copiar solo ABIs de Marketplace
 ```
 
 ### Frontend (apps/frontend):
@@ -850,20 +1140,22 @@ Es la "nafta" que necesitás para que tu transacción se ejecute en la blockchai
 
 ## 🌟 Tecnologías Resumidas
 
-| Capa                | Tecnología     | Versión | Propósito                  |
-| ------------------- | -------------- | ------- | -------------------------- |
-| **Blockchain**      | Polygon Amoy   | Testnet | Red de despliegue          |
-| **Smart Contracts** | Solidity       | 0.8.4   | Lenguaje de contratos      |
-| **Entorno Dev**     | Hardhat        | 2.27.0  | Compilación y despliegue   |
-| **Web3 Lib**        | Ethers.js      | 6.15.0  | Interacción con blockchain |
-| **Frontend**        | Next.js        | 16.0.1  | Framework React            |
-| **UI Lib**          | React          | 19.2.0  | Biblioteca de componentes  |
-| **Web3 React**      | Wagmi          | 2.19.2  | Hooks de blockchain        |
-| **Wallet**          | RainbowKit     | 2.2.9   | Conexión de wallets        |
-| **ABI Parser**      | Viem           | 2.38.6  | Utilidades Web3            |
-| **Estilos**         | Tailwind CSS   | 3.4     | Framework CSS              |
-| **Components**      | HeroUI         | 2.8.5   | Componentes React          |
-| **Cache**           | TanStack Query | 5.90.7  | Estado y caché             |
+| Capa                | Tecnología      | Versión | Propósito                  |
+| ------------------- | --------------- | ------- | -------------------------- |
+| **Blockchain**      | Polygon Amoy    | Testnet | Red de despliegue          |
+| **Smart Contracts** | Solidity        | 0.8.4   | Lenguaje de contratos      |
+| **Token Standards** | ERC-20, ERC-721 | -       | Tokens y NFTs              |
+| **Security**        | ReentrancyGuard | OZ 4.9  | Protección contra ataques  |
+| **Entorno Dev**     | Hardhat         | 2.27.0  | Compilación y despliegue   |
+| **Web3 Lib**        | Ethers.js       | 6.15.0  | Interacción con blockchain |
+| **Frontend**        | Next.js         | 16.0.1  | Framework React            |
+| **UI Lib**          | React           | 19.2.0  | Biblioteca de componentes  |
+| **Web3 React**      | Wagmi           | 2.19.2  | Hooks de blockchain        |
+| **Wallet**          | RainbowKit      | 2.2.9   | Conexión de wallets        |
+| **ABI Parser**      | Viem            | 2.38.6  | Utilidades Web3            |
+| **Estilos**         | Tailwind CSS    | 3.4     | Framework CSS              |
+| **Components**      | HeroUI          | 2.8.5   | Componentes React          |
+| **Cache**           | TanStack Query  | 5.90.7  | Estado y caché             |
 
 ---
 
